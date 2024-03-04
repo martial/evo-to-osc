@@ -5,11 +5,20 @@ import serial.tools.list_ports
 import sys
 import crcmod.predefined  # To install: pip install crcmod
 from pythonosc.udp_client import SimpleUDPClient  # OSC support
+import argparse  # Import argparse library
 
-# Configuration for OSC
-ip = "127.0.0.1"  # IP address of the OSC server
-port = 8000  # Port number of the OSC server
-osc_client = SimpleUDPClient(ip, port)  # Create OSC client
+# Setup command line arguments
+parser = argparse.ArgumentParser(description='Send range data from Evo sensor to OSC server.')
+parser.add_argument('ip', type=str, help='IP address of the OSC server')
+parser.add_argument('port', type=int, help='Port number of the OSC server')
+parser.add_argument('index', type=int, help='Index to be sent with every OSC message')
+args = parser.parse_args()
+
+# Use command line arguments for OSC configuration
+ip = args.ip  # IP address of the OSC server from command line argument
+port = args.port  # Port number from command line argument
+index = args.index  # Index from command line argument
+osc_client = SimpleUDPClient(ip, port)  # Create OSC client with command line arguments
 
 def findEvo():
     print('Scanning all live ports on this PC')
@@ -67,7 +76,8 @@ if __name__ == "__main__":
         try:
             range_data = get_evo_range(evo)
             print(range_data)
-            osc_client.send_message("/evo/range", range_data)  # Send range data over OSC
+            # Send range data along with index over OSC
+            osc_client.send_message("/evo/range", [index, range_data])
         except serial.serialutil.SerialException:
             print("Device disconnected (or multiple access on port). Exiting...")
             break
